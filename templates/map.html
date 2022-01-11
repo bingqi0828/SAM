@@ -1,0 +1,578 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Drone map</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'style.css'%}" />
+<link rel="stylesheet" type="text/css" href="{% static 'table.css'%}" />
+</head>
+<body>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/numeral.js/2.0.6/numeral.min.js"></script> 
+<script src="https://cdn.jsdelivr.net/npm/jstat@1.9.4/dist/jstat.min.js"></script> 
+<script src="https://cdn.jsdelivr.net/gh/formulajs/formulajs@2.9.0/dist/formula.min.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.2/mapbox-gl-draw.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.2/mapbox-gl-draw.css" type="text/css">
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css" type="text/css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<div id="panels" style="overflow-y: scroll;overflow-x: hidden;">
+    <img src="/static/images/logo.png" alt="Avatar"  >
+    <b href="#about">Profiles</b>
+    <a href="#about">Drones</a>
+    <b href="#about">About</b>
+    <a href="#about">Help</a>
+    <a href="#services">Logout</a>
+    <button class="dropdown-btn">Pre-Flight Check 
+        <i class="fa fa-caret-down"></i>
+      </button>
+      <div class="dropdown-container" style="display: none;">
+        <button class="accordion">Pilot</button>
+        <div class="map-overlay top " style="overflow-y: scroll;">
+            <div class="map-overlay-inner">
+            <fieldset>
+            <label>Pilot Experience with Current eVTOL</label>
+            <select id="easing" name="easing">
+            <option value="easeInCubic">Drone1</option>
+            <option value="easeOutQuint">Drone2</option>
+            <option value="easeInOutCirc">Drone3</option>
+            <option value="easeOutBounce">Drone3</option>
+            </select>
+            </fieldset>
+            <label>History of eVTOL Accident</label>
+            <select id="easing" name="easing">
+            <option value="easeInCubic">Drone1</option>
+            <option value="easeOutQuint">Drone2</option>
+            <option value="easeInOutCirc">Drone3</option>
+            <option value="easeOutBounce">Drone3</option>
+            </select>
+            </fieldset>
+            <label>Time Since Last Training</label>
+            <select id="easing" name="easing">
+            <option value="easeInCubic">Drone1</option>
+            <option value="easeOutQuint">Drone2</option>
+            <option value="easeInOutCirc">Drone3</option>
+            <option value="easeOutBounce">Drone3</option>
+            </select>
+            </fieldset>
+            <label>Pilot History of Flying the Route</label>
+            <select id="easing" name="easing">
+            <option value="easeInCubic">Drone1</option>
+            <option value="easeOutQuint">Drone2</option>
+            <option value="easeInOutCirc">Drone3</option>
+            <option value="easeOutBounce">Drone3</option>
+            </select>
+            </fieldset>
+
+            </div>
+            </div>
+      </div>
+    <button class="dropdown-btn">Evaluation 
+        <i class="fa fa-caret-down"></i>
+      </button>
+    
+    <div class="dropdown-container" style="display: none;">
+    <button class="accordion">Required Parameters</button>
+    <div class="map-overlay top " style="overflow-y: scroll;">
+        <div class="map-overlay-inner">
+        <fieldset>
+        <label>Select machine type</label>
+        <select id="easing" name="easing">
+        <option value="easeInCubic">Drone1</option>
+        <option value="easeOutQuint">Drone2</option>
+        <option value="easeInOutCirc">Drone3</option>
+        <option value="easeOutBounce">Drone3</option>
+        </select>
+        </fieldset>
+        <fieldset>
+        <label for="duration">Set visibility</label>
+        <p id="durationValue"></p>
+        <input type="range" id="duration" name="duration" min="0" max="10000" step="500" value="1000">
+        </fieldset>
+        <fieldset>
+        <label>Whether or not
+        <input type="checkbox" id="animate" name="animate" checked=""> </label>
+        </fieldset>
+        <fieldset class="offset">
+        <label for="offset-x">People</label>
+        <input type="number" id="offset-x" name="offset-x" min="-200" max="200" step="50" value="0">
+        </fieldset>
+        <fieldset class="offset">
+        <label for="offset-y">Height</label>
+        <input type="number" id="offset-y" name="offset-y" min="-200" max="200" step="50" value="0">
+        </fieldset>
+        <fieldset class="offset">
+            <label for="offset-y">Temperature</label>
+            <input type="number" id="offset-y" name="offset-y" min="-200" max="200" step="50" value="0">
+            </fieldset>
+        </div>
+        </div>
+
+
+        <button class="accordion">Optional Parameters</button>
+        <div class="map-overlay top " style="overflow-y: scroll;">
+            <div class="map-overlay-inner">
+            <fieldset>
+            <label>Select machine type</label>
+            <select id="easing" name="easing">
+            <option value="easeInCubic">Drone1</option>
+            <option value="easeOutQuint">Drone2</option>
+            <option value="easeInOutCirc">Drone3</option>
+            <option value="easeOutBounce">Drone3</option>
+            </select>
+            </fieldset>
+            <fieldset>
+            <label for="duration">Set visibility</label>
+            <p id="durationValue"></p>
+            <input type="range" id="duration" name="duration" min="0" max="10000" step="500" value="1000">
+            </fieldset>
+            <fieldset>
+            <label>Whether or not
+            <input type="checkbox" id="animate" name="animate" checked=""> </label>
+            </fieldset>
+            <fieldset class="offset">
+            <label for="offset-x">People</label>
+            <input type="number" id="offset-x" name="offset-x" min="-200" max="200" step="50" value="0">
+            </fieldset>
+            <fieldset class="offset">
+            <label for="offset-y">Height</label>
+            <input type="number" id="offset-y" name="offset-y" min="-200" max="200" step="50" value="0">
+            </fieldset>
+            <fieldset class="offset">
+                <label for="offset-y">Temperature</label>
+                <input type="number" id="offset-y" name="offset-y" min="-200" max="200" step="50" value="0">
+                </fieldset>
+            <button type="button" id="animateButton" name="Submit">
+            Submit
+            </button>
+            </div>
+            </div>
+
+        </div>
+
+        <button class="submit">Submit</button>
+    </div>
+    
+<div id="map"></div>
+<div id="layershere">
+    <input id="satellite-v9" type="radio" name="rtoggle" value="satellite" checked="checked">
+    <label for="satellite-v9">satellite</label>
+    <input id="light-v10" type="radio" name="rtoggle" value="light">
+    <label for="light-v10">light</label>
+    <input id="dark-v10" type="radio" name="rtoggle" value="dark">
+    <label for="dark-v10">dark</label>
+    <input id="streets-v11" type="radio" name="rtoggle" value="streets">
+    <label for="streets-v11">streets</label>
+    <input id="outdoors-v11" type="radio" name="rtoggle" value="outdoors">
+    <label for="outdoors-v11">outdoors</label>
+</div>
+<div class="interact-box" style="overflow-y: scroll;">
+    <div class="top">Results</div>
+    <p>This is the interface for risk analysis.</p>
+    <div id="calculated-area"></div>
+    </div>
+<div id="options"></div>
+<div id="geocoder" class="geocoder"></div>
+
+<div id="styleswitch">
+    <button onclick="swtichstyles()"><img src="/static/images/styles.jpg" width="48" height="48"></button>
+</div>
+<div id="layerswitch">
+    <button onclick="swtichlayers()"><img src="/static/images/layers.jpg" width="48" height="48"></button>
+</div>
+
+<div id="pre-check">
+    <button onclick="pilotcheck()"><img src="/static/images/pre.png" width="48" height="48"></button>
+</div>
+
+<div id="appizy">
+    <div class="application-layout-fixed application-align-left">
+      <div class="application">
+        <div class="tabs">
+          <div id="sheet1" class="tab-content active ta2" style="width: 747px">
+            <table>
+              <colgroup>
+                <col span="1" class="co10">
+                <col span="1" class="co11">
+                <col span="1" class="co12">
+              </colgroup>
+              <tbody>
+                <tr class="s1r0 ro7">
+                  <td class="s1r0c0 text ce8" colspan="2">
+                    <p>
+                      Pre Flight Check
+                    </p>
+                  </td>
+                </tr>
+                <tr class="s1r1 ro8">
+                  <td class="s1r1c0 text ce9">
+                    <p>
+                      Pilot
+                    </p>
+                  </td>
+                  <td class="s1r1c1 text Default"></td>
+                  <td class="s1r1c2 text ce9">
+                    <p>
+                      Risk Factor
+                    </p>
+                  </td>
+                </tr>
+                <tr class="s1r2 ro9">
+                  <td class="s1r2c0 text ce10">
+                    <p>
+                      Pilot Experience with Current eVTOL
+                    </p>
+                  </td>
+                  <td class="s1r2c1 in in--text Default">
+                    <select id="s1r2c1" name="PilotExperience">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="Less than 100 hours of flight experience">
+                        Less than 100 hours of flight experience
+                      </option>
+                      <option value="More than 100 but less than 500 ">
+                        More than 100 but less than 500
+                      </option>
+                      <option value="More than 500 but less than 1000">
+                        More than 500 but less than 1000
+                      </option>
+                      <option value="More than 1000 hours of flight experience">
+                        More than 1000 hours of flight experience
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r2c2 out Default">
+                    <div id="s1r2c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r3 ro10">
+                  <td class="s1r3c0 text ce11">
+                    <p>
+                      Does Pilot Have Any History of Accident with Any Type of eVTOL?
+                    </p>
+                  </td>
+                  <td class="s1r3c1 in in--text Default">
+                    <select id="s1r3c1" name="AccidentHistory">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="None">
+                        None
+                      </option>
+                      <option value="Prior history exist">
+                        Prior history exist
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r3c2 out Default">
+                    <div id="s1r3c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r4 ro9">
+                  <td class="s1r4c0 text ce10">
+                    <p>
+                      Time Since Last Training
+                    </p>
+                  </td>
+                  <td class="s1r4c1 in in--text Default">
+                    <select id="s1r4c1" name="TimeSinceLastTraining">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="Less than 6 months">
+                        Less than 6 months
+                      </option>
+                      <option value="More than 6 but less than 12 months">
+                        More than 6 but less than 12 months
+                      </option>
+                      <option value="More than 12 but less than 24 months">
+                        More than 12 but less than 24 months
+                      </option>
+                      <option value="More than 24 months">
+                        More than 24 months
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r4c2 out Default">
+                    <div id="s1r4c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r5 ro9">
+                  <td class="s1r5c0 text ce10">
+                    <p>
+                      Pilot History of Flying the Same Route
+                    </p>
+                  </td>
+                  <td class="s1r5c1 in in--text Default">
+                    <select id="s1r5c1" name="PilotHistory">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="None">
+                        None
+                      </option>
+                      <option value="Less than 50 flights">
+                        Less than 50 flights
+                      </option>
+                      <option value="More than 50 but less than 100 flights">
+                        More than 50 but less than 100 flights
+                      </option>
+                      <option value="More than 100 but less than 1000 flights">
+                        More than 100 but less than 1000 flights
+                      </option>
+                      <option value="More than 1000 flight">
+                        More than 1000 flight
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r5c2 out Default">
+                    <div id="s1r5c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r6 ro9">
+                  <td class="s1r6c0 text Default"></td>
+                  <td class="s1r6c1 text Default"></td>
+                </tr>
+                <tr class="s1r7 ro9">
+                  <td class="s1r7c0 text ce12">
+                    <p>
+                      Average Risk in this Category
+                    </p>
+                  </td>
+                  <td class="s1r7c1 text ce15"></td>
+                  <td class="s1r7c2 out ce15">
+                    <div id="s1r7c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r8 ro9">
+                  <td></td>
+                </tr>
+                <tr class="s1r9 ro9">
+                  <td class="s1r9c0 text ce9">
+                    <p>
+                      eVTOL
+                    </p>
+                  </td>
+                </tr>
+                <tr class="s1r10 ro9">
+                  <td class="s1r10c0 text ce10">
+                    <p>
+                      eVTOL Time in Service
+                    </p>
+                  </td>
+                  <td class="s1r10c1 in in--text Default">
+                    <select id="s1r10c1" name="TimeInService">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="Less than 10000 hours of service">
+                        Less than 10000 hours of service
+                      </option>
+                      <option value="More than 10000 but less than 100000 hours of service">
+                        More than 10000 but less than 100000 hours of service
+                      </option>
+                      <option value="More than 100000 but less than 1000000 hours of service">
+                        More than 100000 but less than 1000000 hours of service
+                      </option>
+                      <option value="More than 1000000 hours of service">
+                        More than 1000000 hours of service
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r10c2 out Default">
+                    <div id="s1r10c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r11 ro11">
+                  <td class="s1r11c0 text ce11">
+                    <p>
+                      Time Since Last Comprehensive Mechanical Check/Recertification
+                    </p>
+                  </td>
+                  <td class="s1r11c1 in in--text Default">
+                    <select id="s1r11c1" name="TimeSinceLastCheck">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="Less than 5000 hours since">
+                        Less than 5000 hours since
+                      </option>
+                      <option value="Less than 5000 but more than 50000 hours since">
+                        Less than 5000 but more than 50000 hours since
+                      </option>
+                      <option value="less than 50000 but less than 100000 hours since">
+                        less than 50000 but less than 100000 hours since
+                      </option>
+                      <option value="More than 100000 hours since">
+                        More than 100000 hours since
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r11c2 out Default">
+                    <div id="s1r11c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r12 ro12">
+                  <td class="s1r12c0 text ce11"></td>
+                  <td class="s1r12c1 text Default"></td>
+                </tr>
+                <tr class="s1r13 ro12">
+                  <td class="s1r13c0 text ce12">
+                    <p>
+                      Average Risk in this Category
+                    </p>
+                  </td>
+                  <td class="s1r13c1 text ce15"></td>
+                  <td class="s1r13c2 out ce15">
+                    <div id="s1r13c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r14 ro12">
+                  <td class="s1r14c0 text ce11"></td>
+                  <td class="s1r14c1 text Default"></td>
+                </tr>
+                <tr class="s1r15 ro9">
+                  <td class="s1r15c0 text ce9">
+                    <p>
+                      Ambient Conditions
+                    </p>
+                  </td>
+                </tr>
+                <tr class="s1r16 ro9">
+                  <td class="s1r16c0 text ce11">
+                    <p>
+                      Weather
+                    </p>
+                  </td>
+                  <td class="s1r16c1 in in--text Default">
+                    <select id="s1r16c1" name="Weather">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="Sunny and Clear">
+                        Sunny and Clear
+                      </option>
+                      <option value="Rainy">
+                        Rainy
+                      </option>
+                      <option value="Snowy">
+                        Snowy
+                      </option>
+                      <option value="Cloudy">
+                        Cloudy
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r16c2 out Default">
+                    <div id="s1r16c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r17 ro9">
+                  <td class="s1r17c0 text ce11">
+                    <p>
+                      Visibility
+                    </p>
+                  </td>
+                  <td class="s1r17c1 in in--text Default">
+                    <select id="s1r17c1" name="Visibility">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="Less than 1 mile of visibility">
+                        Less than 1 mile of visibility
+                      </option>
+                      <option value="More than 1 but less than 5 miles of visibility">
+                        More than 1 but less than 5 miles of visibility
+                      </option>
+                      <option value="More than 5 miles of Visibility">
+                        More than 5 miles of Visibility
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r17c2 out Default">
+                    <div id="s1r17c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r18 ro9">
+                  <td class="s1r18c0 text ce11">
+                    <p>
+                      Temperature
+                    </p>
+                  </td>
+                  <td class="s1r18c1 in in--text Default">
+                    <select id="s1r18c1" name="Temperature">
+                      <option selected value="Choose an item">
+                        Choose an item
+                      </option>
+                      <option value="More than 104 F">
+                        More than 104 F
+                      </option>
+                      <option value="More than 50 F but less than 104 F">
+                        More than 50 F but less than 104 F
+                      </option>
+                      <option value="More than 32 F but less than 50 F">
+                        More than 32 F but less than 50 F
+                      </option>
+                      <option value="Lower than 32 F">
+                        Lower than 32 F
+                      </option>
+                    </select>
+                  </td>
+                  <td class="s1r18c2 out Default">
+                    <div id="s1r18c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r19 ro13">
+                  <td></td>
+                </tr>
+                <tr class="s1r20 ro14">
+                  <td class="s1r20c0 text ce12">
+                    <p>
+                      Average Risk in this Category
+                    </p>
+                  </td>
+                  <td class="s1r20c1 text ce15"></td>
+                  <td class="s1r20c2 out ce15">
+                    <div id="s1r20c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r21 ro15">
+                  <td></td>
+                </tr>
+                <tr class="s1r22 ro16">
+                  <td class="s1r22c0 text ce13">
+                    <p>
+                      Risk Factor
+                    </p>
+                  </td>
+                  <td class="s1r22c1 text ce15"></td>
+                  <td class="s1r22c2 out ce16">
+                    <div id="s1r22c2"></div>
+                  </td>
+                </tr>
+                <tr class="s1r23 ro3">
+                  <td class="s1r23c0 text Default"></td>
+                  <td class="s1r23c1 text Default"></td>
+                  <td class="s1r23c2 text Default">
+                    <p>
+                      .
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- Vendor libraries -->
+<script src="/static/map.js"></script>
+<script src="/static/table.js"></script>
+</body>
+</html>
